@@ -18,7 +18,13 @@ export async function connectMongo() {
   }
 
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is missing");
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+    });
     isMongoConnected = true;
     console.log("Connected to MongoDB via Mongoose");
   } catch (err) {

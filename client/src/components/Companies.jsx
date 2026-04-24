@@ -3,6 +3,7 @@ import { CiLocationOn, CiSearch } from "react-icons/ci";
 import { BsBriefcase, BsBuilding } from "react-icons/bs";
 import { HiArrowRight } from "react-icons/hi";
 import api from "../lib/api";
+import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
 // Client-side fallback — used only when server is unreachable
 const DEMO_JOBS = [
@@ -37,7 +38,7 @@ const normalizeJob = (job) => ({
   jobType:     job.job_type     || "Full-time",
   domain:      job.domain       || job.company_sector || "",
   url:         job.job_link     || "#",
-  companyLogo: job.company_logo_link || "",
+  companyLogo: toDisplayLogoUrl(resolveLogoUrl(job)),
   jobLevel:    job.job_working_des   || "",
   applicants:  job.applicants        || "",
   postedDate:  job.posted_date       || "",
@@ -59,9 +60,6 @@ const TYPE_COLORS = {
   "Part-time": "bg-sky-50 text-sky-700",
 };
 
-const getInitials = (name) =>
-  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-
 const groupByCompany = (jobs) => {
   const map = new Map();
   jobs.forEach((job) => {
@@ -70,6 +68,29 @@ const groupByCompany = (jobs) => {
     map.get(name).jobs.push(job);
   });
   return Array.from(map.values()).sort((a, b) => b.jobs.length - a.jobs.length);
+};
+
+const CompanyLogo = ({ logo, name, className, fallbackClassName }) => {
+  const [failedLogo, setFailedLogo] = useState("");
+
+  if (logo && failedLogo !== logo) {
+    return (
+      <img
+        src={logo}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailedLogo(logo)}
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <div className={fallbackClassName}>
+      {getInitials(name)}
+    </div>
+  );
 };
 
 const Companies = () => {
@@ -161,9 +182,12 @@ const Companies = () => {
                         : "border-slate-100 bg-white shadow-sm hover:border-[#4f46e5]/30 hover:shadow-md"
                     }`}
                   >
-                    <div className={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold ${colorCls}`}>
-                      {getInitials(company.name)}
-                    </div>
+                    <CompanyLogo
+                      logo={company.jobs[0]?.companyLogo}
+                      name={company.name}
+                      className="h-10 w-10 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                      fallbackClassName={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold ${colorCls}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-slate-800 truncate">{company.name}</p>
                       <p className="text-[11px] text-slate-400 mt-0.5">
@@ -188,11 +212,14 @@ const Companies = () => {
               {/* Banner */}
               <div className="relative h-24 flex-shrink-0 bg-[linear-gradient(135deg,#03001e,#7303c0,#ec38bc,#fdeff9)]">
                 <div className="absolute -bottom-6 left-6">
-                  <div className={`h-12 w-12 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center text-sm font-bold ${
-                    ACCENT_COLORS[companies.findIndex(c => c.name === selectedCompany.name) % ACCENT_COLORS.length]
-                  }`}>
-                    {getInitials(selectedCompany.name)}
-                  </div>
+                  <CompanyLogo
+                    logo={selectedCompany.jobs[0]?.companyLogo}
+                    name={selectedCompany.name}
+                    className="h-12 w-12 rounded-2xl border-4 border-white bg-white object-cover shadow-lg"
+                    fallbackClassName={`h-12 w-12 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center text-sm font-bold ${
+                      ACCENT_COLORS[companies.findIndex(c => c.name === selectedCompany.name) % ACCENT_COLORS.length]
+                    }`}
+                  />
                 </div>
               </div>
 
@@ -218,11 +245,14 @@ const Companies = () => {
                     key={job.id}
                     className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200"
                   >
-                    <div className={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[11px] font-bold ${
-                      ACCENT_COLORS[i % ACCENT_COLORS.length]
-                    }`}>
-                      {job.domain?.slice(0, 2).toUpperCase() || "JB"}
-                    </div>
+                    <CompanyLogo
+                      logo={job.companyLogo}
+                      name={job.companyName}
+                      className="h-10 w-10 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                      fallbackClassName={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[11px] font-bold ${
+                        ACCENT_COLORS[i % ACCENT_COLORS.length]
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-800 truncate">{job.jobTitle}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">

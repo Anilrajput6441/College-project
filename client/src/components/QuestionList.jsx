@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Tab } from "./InterviewUICommon";
 import api from "../lib/api";
-
-const getInitials = (name = "") =>
-  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
 const QuestionList = ({ questions = [], onJobSelect, selectedJob }) => {
   const [activeTab, setActiveTab] = useState("jobs");
@@ -21,7 +19,7 @@ const QuestionList = ({ questions = [], onJobSelect, selectedJob }) => {
             id:          a.jobId._id,
             job_title:   a.jobId.job_title,
             company_name:a.jobId.company_name,
-            company_logo:a.jobId.company_logo_link,
+            company_logo:toDisplayLogoUrl(resolveLogoUrl(a.jobId)),
             location:    a.jobId.job_location,
             status:      a.status,
           }));
@@ -76,6 +74,8 @@ const QuestionList = ({ questions = [], onJobSelect, selectedJob }) => {
                   <img
                     src={job.company_logo}
                     alt={job.company_name}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
                     className="h-9 w-9 rounded-xl object-cover border border-slate-200 flex-shrink-0"
                   />

@@ -26,3 +26,62 @@ export const getAllJobs = async (req, res) => {
     res.status(200).json(demoJobs);
   }
 };
+
+export const proxyJobLogo = async (req, res) => {
+  const rawUrl = req.query.url;
+
+  if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+    return res.status(400).json({ error: "Missing logo url" });
+  }
+
+  let target;
+  try {
+    target = new URL(rawUrl);
+  } catch {
+    return res.status(400).json({ error: "Invalid logo url" });
+  }
+
+  if (!["http:", "https:"].includes(target.protocol)) {
+    return res.status(400).json({ error: "Unsupported logo protocol" });
+  }
+
+  try {
+    const response = await fetch(target, {
+      redirect: "follow",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "accept-language": "en-US,en;q=0.9",
+        referer: `${target.origin}/`,
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "Logo fetch failed",
+        status: response.status,
+        source: target.hostname,
+      });
+    }
+
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+    const cacheControl = response.headers.get("cache-control");
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader(
+      "Cache-Control",
+      cacheControl || "public, max-age=86400, s-maxage=86400"
+    );
+    res.setHeader("Content-Length", buffer.length.toString());
+    return res.send(buffer);
+  } catch (error) {
+    console.error("Logo proxy error:", error);
+    return res.status(502).json({
+      error: "Unable to fetch remote logo",
+      source: target.hostname,
+    });
+  }
+};

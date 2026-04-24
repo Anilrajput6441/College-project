@@ -3,6 +3,7 @@ import { CiLocationOn, CiCalendarDate, CiSearch } from "react-icons/ci";
 import { BsBriefcase, BsPeople } from "react-icons/bs";
 import { HiArrowRight, HiCheck, HiX } from "react-icons/hi";
 import api from "../lib/api";
+import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
 // Local fallback jobs — shown when API/Supabase is unavailable
 const LOCAL_DEMO_JOBS = [
@@ -22,7 +23,7 @@ const normalizeJob = (job) => ({
   id:             job.id              || job.job_link   || Math.random().toString(36).substr(2, 9),
   jobTitle:       job.job_title       || "Untitled Position",
   companyName:    job.company_name    || "Unknown Company",
-  companyLogo:    job.company_logo_link || "",
+  companyLogo:    toDisplayLogoUrl(resolveLogoUrl(job)),
   companyPage:    job.company_page_link || "",
   jobGeo:         job.job_location    || "Location not specified",
   jobDescription: job.job_description || "",
@@ -43,18 +44,17 @@ const tagColors = [
   "bg-sky-50 text-sky-700",
 ];
 
-const getInitials = (name) =>
-  name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-
 const LogoOrInitials = ({ logo, name, size = "h-12 w-12" }) => {
-  const [err, setErr] = useState(false);
-  if (logo && !err) {
+  const [failedLogo, setFailedLogo] = useState("");
+
+  if (logo && failedLogo !== logo) {
     return (
       <img
         src={logo}
         alt={name}
-        crossOrigin="anonymous"
-        onError={() => setErr(true)}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailedLogo(logo)}
         className={`${size} rounded-2xl object-cover border border-slate-100 flex-shrink-0`}
       />
     );

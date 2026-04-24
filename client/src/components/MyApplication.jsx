@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CiCalendarDate, CiLocationOn } from "react-icons/ci";
 import { BsBriefcase } from "react-icons/bs";
 import api from "../lib/api";
+import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
 const STATUS_CONFIG = {
   "Applied":        { bg: "bg-blue-50",    text: "text-blue-700",    dot: "bg-blue-400"    },
@@ -12,17 +13,17 @@ const STATUS_CONFIG = {
 };
 const ALL_STATUSES = Object.keys(STATUS_CONFIG);
 
-const getInitials = (name = "") =>
-  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-
 const LogoOrInitials = ({ logo, name }) => {
-  const [err, setErr] = useState(false);
-  if (logo && !err) {
+  const [failedLogo, setFailedLogo] = useState("");
+
+  if (logo && failedLogo !== logo) {
     return (
       <img
         src={logo}
         alt={name}
-        onError={() => setErr(true)}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailedLogo(logo)}
         className="h-12 w-12 rounded-xl object-cover border border-slate-100 flex-shrink-0"
       />
     );
@@ -40,7 +41,7 @@ const JobCard = ({ job, appliedAt, status, onStatusChange }) => {
   const s = STATUS_CONFIG[status] || STATUS_CONFIG["Applied"];
   return (
     <div className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200">
-      <LogoOrInitials logo={job.company_logo_link} name={job.company_name} />
+      <LogoOrInitials logo={toDisplayLogoUrl(resolveLogoUrl(job))} name={job.company_name} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-slate-800 text-sm truncate">{job.job_title}</p>
         <p className="text-slate-500 text-xs mt-0.5 truncate">{job.company_name}</p>
@@ -234,7 +235,7 @@ const MyApplication = () => {
                   .slice(0, 5)
                   .map((a) => (
                     <div key={a.jobId._id} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-                      <LogoOrInitials logo={a.jobId.company_logo_link} name={a.jobId.company_name} />
+                      <LogoOrInitials logo={toDisplayLogoUrl(resolveLogoUrl(a.jobId))} name={a.jobId.company_name} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-slate-800 truncate">{a.jobId.job_title}</p>
                         <p className="text-[11px] text-slate-400 truncate">{a.jobId.company_name}</p>
