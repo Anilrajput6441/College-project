@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from "./api";
+
 export const getInitials = (name = "") =>
   name
     .split(" ")
@@ -34,6 +36,6 @@ export const toDisplayLogoUrl = (value) => {
   if (!value) return "";
   if (!isExternalHttpUrl(value)) return value;
 
-  const apiBase = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+  const apiBase = getApiBaseUrl();
   return `${apiBase}/jobs/logo?url=${encodeURIComponent(value)}`;
 };
