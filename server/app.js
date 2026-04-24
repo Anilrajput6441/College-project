@@ -11,8 +11,16 @@ import profileRoutes from "./routes/profile.routes.js";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://college-project-sepia.vercel.app",
+  "https://college-project-63e4fvm65-anilrajput6441s-projects.vercel.app",
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_2,
+].filter(Boolean);
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
