@@ -34,7 +34,10 @@ const Profile = () => {
 
   useEffect(() => {
     api.get("/profile")
-      .then(res => setUserData(res.data))
+      .then(res => {
+        const safeUser = res.data && typeof res.data === "object" ? res.data : null;
+        setUserData(safeUser);
+      })
       .catch(err => {
         if (err.response?.status === 401) navigate("/login");
       })

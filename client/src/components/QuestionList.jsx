@@ -12,8 +12,9 @@ const QuestionList = ({ questions = [], onJobSelect, selectedJob }) => {
     api
       .get("/apply/my-applications")
       .then((res) => {
+        const entries = Array.isArray(res.data) ? res.data : [];
         // Each entry: { jobId: { ...SavedJob }, appliedAt, status }
-        const normalized = res.data
+        const normalized = entries
           .filter((a) => a.jobId)
           .map((a) => ({
             id:          a.jobId._id,

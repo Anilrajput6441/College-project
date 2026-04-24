@@ -96,7 +96,12 @@ const MyApplication = () => {
   useEffect(() => {
     api
       .get("/apply/my-applications")
-      .then((res) => setApplications(res.data))
+      .then((res) => {
+        const safeApplications = Array.isArray(res.data)
+          ? res.data.filter((item) => item?.jobId)
+          : [];
+        setApplications(safeApplications);
+      })
       .catch((err) => {
         if (err.response?.status === 401) setError("Please log in to see your applications.");
         else setError("Failed to load applications.");
@@ -114,12 +119,17 @@ const MyApplication = () => {
     } catch {
       // Revert on failure by re-fetching
       api.get("/apply/my-applications")
-        .then((res) => setApplications(res.data));
+        .then((res) => {
+          const safeApplications = Array.isArray(res.data)
+            ? res.data.filter((item) => item?.jobId)
+            : [];
+          setApplications(safeApplications);
+        });
     }
   };
 
   // Each entry: { jobId: { ...SavedJob fields }, appliedAt }
-  const jobs = applications.filter((a) => a.jobId); // guard against null populated refs
+  const jobs = Array.isArray(applications) ? applications.filter((a) => a?.jobId) : [];
 
   const tabs = [
     { id: "applied", label: "Applied Jobs", count: jobs.length },

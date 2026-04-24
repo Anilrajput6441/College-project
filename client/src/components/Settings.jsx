@@ -88,8 +88,12 @@ const Settings = () => {
   useEffect(() => {
     api.get(API)
       .then((res) => {
-        setUser(res.data);
-        setProfile({ username: res.data.username, email: res.data.email });
+        const safeUser = res.data && typeof res.data === "object" ? res.data : null;
+        setUser(safeUser);
+        setProfile({
+          username: safeUser?.username || "",
+          email: safeUser?.email || "",
+        });
       })
       .catch((err) => {
         if (err.response?.status === 401) navigate("/login");
