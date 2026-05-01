@@ -31,7 +31,7 @@ const DEMO_JOBS = [
 
 // Map Supabase row → component shape
 const normalizeJob = (job) => ({
-  id:          job.id           || job.job_link || Math.random().toString(36).substr(2, 9),
+  id:          job.id           || job.job_link || `${job.company_name}-${job.job_title}`,
   companyName: job.company_name || "Unknown Company",
   jobTitle:    job.job_title    || "Untitled Position",
   jobGeo:      job.job_location || "Location not specified",
@@ -72,6 +72,8 @@ const groupByCompany = (jobs) => {
 
 const CompanyLogo = ({ logo, name, className, fallbackClassName }) => {
   const [failedLogo, setFailedLogo] = useState("");
+
+  useEffect(() => { setFailedLogo(""); }, [logo]);
 
   if (logo && failedLogo !== logo) {
     return (
@@ -206,7 +208,7 @@ const Companies = () => {
         </div>
 
         {/* ── Right: Company Detail ── */}
-        <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-slate-200/80 bg-white/60 backdrop-blur-sm shadow-2xl shadow-slate-300/50">
+        <div key={selectedCompany?.name} className="flex flex-col overflow-hidden rounded-3xl border-2 border-slate-200/80 bg-white/60 backdrop-blur-sm shadow-2xl shadow-slate-300/50">
           {selectedCompany ? (
             <>
               {/* Banner */}
