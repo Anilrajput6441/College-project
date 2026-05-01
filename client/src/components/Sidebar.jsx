@@ -36,11 +36,7 @@ const navSections = [
     label: "Resources",
     items: [
       { name: "Career Tips", icon: <MdOutlineArticle />, path: "/career-tips" },
-      {
-        name: "Skill Assessments",
-        icon: <SiLevelsdotfyi />,
-        path: "/skill-assessments",
-      },
+      
     ],
   },
   {

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { CiLocationOn, CiSearch } from "react-icons/ci";
 import { BsBriefcase, BsBuilding } from "react-icons/bs";
-import { HiArrowRight } from "react-icons/hi";
+import { HiArrowRight, HiCheck, HiX } from "react-icons/hi";
 import api from "../lib/api";
 import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
@@ -39,9 +39,10 @@ const normalizeJob = (job) => ({
   domain:      job.domain       || job.company_sector || "",
   url:         job.job_link     || "#",
   companyLogo: toDisplayLogoUrl(resolveLogoUrl(job)),
-  jobLevel:    job.job_working_des   || "",
-  applicants:  job.applicants        || "",
-  postedDate:  job.posted_date       || "",
+  jobLevel:       job.job_working_des   || "",
+  applicants:     job.applicants        || "",
+  postedDate:     job.posted_date       || "",
+  jobDescription: job.job_description   || "",
 });
 
 const ACCENT_COLORS = [
@@ -100,6 +101,42 @@ const Companies = () => {
   const [loading, setLoading]             = useState(true);
   const [search, setSearch]               = useState("");
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedJob, setSelectedJob]     = useState(null);
+  const [pendingJob, setPendingJob]       = useState(null);
+  const [applyStatus, setApplyStatus]     = useState(null);
+
+  const handleApplyClick = (job) => {
+    window.open(job.url, "_blank", "noopener,noreferrer");
+    setPendingJob(job);
+    setApplyStatus(null);
+  };
+
+  const handleConfirmApply = async () => {
+    if (!pendingJob) return;
+    setApplyStatus("loading");
+    try {
+      const res = await api.post("/apply", {
+        job: {
+          job_link:          pendingJob.url,
+          job_title:         pendingJob.jobTitle,
+          company_name:      pendingJob.companyName,
+          company_logo_link: pendingJob.companyLogo,
+          job_location:      pendingJob.jobGeo,
+          job_type:          pendingJob.jobType,
+          job_working_des:   pendingJob.jobLevel,
+          job_description:   pendingJob.jobDescription,
+          posted_date:       pendingJob.postedDate,
+          domain:            pendingJob.domain,
+          applicants:        pendingJob.applicants,
+        },
+      });
+      setApplyStatus(res.data.alreadyApplied ? "duplicate" : "success");
+    } catch (err) {
+      setApplyStatus(err.response?.status === 401 ? "success" : "error");
+    }
+  };
+
+  const closeModal = () => { setPendingJob(null); setApplyStatus(null); };
 
   useEffect(() => {
     api.get("/jobs")
@@ -177,7 +214,7 @@ const Companies = () => {
                 return (
                   <button
                     key={company.name}
-                    onClick={() => setSelectedCompany(company)}
+                    onClick={() => { setSelectedCompany(company); setSelectedJob(null); }}
                     className={`w-full flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-200 ${
                       active
                         ? "border-[#4f46e5] bg-[#eef2ff] shadow-md"
@@ -239,49 +276,112 @@ const Companies = () => {
                 </div>
               </div>
 
-              {/* Jobs list */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5 max-h-[calc(100vh-18rem)]">
-                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Open Positions</p>
-                {selectedCompany.jobs.map((job, i) => (
-                  <div
-                    key={job.id}
-                    className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200"
+              {/* Jobs list OR Job detail */}
+              {selectedJob ? (
+                <div className="flex-1 overflow-y-auto px-5 py-4">
+                  <button
+                    onClick={() => setSelectedJob(null)}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#4f46e5] hover:text-[#4338ca] mb-4"
                   >
-                    <CompanyLogo
-                      logo={job.companyLogo}
-                      name={job.companyName}
-                      className="h-10 w-10 rounded-xl object-cover border border-slate-100 flex-shrink-0"
-                      fallbackClassName={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[11px] font-bold ${
-                        ACCENT_COLORS[i % ACCENT_COLORS.length]
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{job.jobTitle}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                          <CiLocationOn size={12} />{job.jobGeo}
-                        </span>
-                        {job.domain && (
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ACCENT_COLORS[i % ACCENT_COLORS.length]}`}>
-                            {job.domain}
-                          </span>
-                        )}
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[job.jobType] || "bg-slate-100 text-slate-600"}`}>
-                          {job.jobType}
-                        </span>
+                    <HiArrowRight size={12} className="rotate-180" /> Back to positions
+                  </button>
+
+                  {/* Job header card */}
+                  <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm mb-3">
+                    <div className="flex items-start gap-4 mb-4">
+                      <CompanyLogo
+                        logo={selectedJob.companyLogo}
+                        name={selectedJob.companyName}
+                        className="h-12 w-12 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                        fallbackClassName={`h-12 w-12 rounded-xl flex-shrink-0 flex items-center justify-center text-sm font-bold ${ACCENT_COLORS[0]}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">{selectedJob.jobTitle}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{selectedJob.companyName}</p>
                       </div>
                     </div>
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#4f46e5] px-3.5 py-1.5 text-[11px] font-medium text-white hover:bg-[#4338ca] transition-colors shadow-sm"
-                    >
-                      Apply <HiArrowRight size={11} />
-                    </a>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 rounded-full px-2.5 py-1">
+                        <CiLocationOn size={12} />{selectedJob.jobGeo}
+                      </span>
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${TYPE_COLORS[selectedJob.jobType] || "bg-slate-100 text-slate-600"}`}>
+                        {selectedJob.jobType}
+                      </span>
+                      {selectedJob.domain && (
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${ACCENT_COLORS[0]}`}>
+                          {selectedJob.domain}
+                        </span>
+                      )}
+                      {selectedJob.jobLevel && (
+                        <span className="rounded-full px-2.5 py-1 text-[11px] bg-slate-50 text-slate-500">
+                          {selectedJob.jobLevel}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {selectedJob.postedDate && (
+                        <span className="text-[11px] text-slate-400">Posted: {selectedJob.postedDate}</span>
+                      )}
+                      {selectedJob.applicants && (
+                        <span className="text-[11px] text-slate-400">{selectedJob.applicants} applicants</span>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* Full JD */}
+                  {selectedJob.jobDescription && (
+                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm mb-3">
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Job Description</p>
+                      <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{selectedJob.jobDescription}</p>
+                    </div>
+                  )}
+
+                  {/* Apply button */}
+                  <button
+                    onClick={() => handleApplyClick(selectedJob)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#4f46e5] px-4 py-2 text-xs font-medium text-white hover:bg-[#4338ca] transition-colors shadow-sm mb-4"
+                  >
+                    Apply Now <HiArrowRight size={12} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5 max-h-[calc(100vh-18rem)]">
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Open Positions</p>
+                  {selectedCompany.jobs.map((job, i) => (
+                    <div
+                      key={job.id}
+                      onClick={() => setSelectedJob(job)}
+                      className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200 cursor-pointer"
+                    >
+                      <CompanyLogo
+                        logo={job.companyLogo}
+                        name={job.companyName}
+                        className="h-10 w-10 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                        fallbackClassName={`h-10 w-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[11px] font-bold ${
+                          ACCENT_COLORS[i % ACCENT_COLORS.length]
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{job.jobTitle}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                            <CiLocationOn size={12} />{job.jobGeo}
+                          </span>
+                          {job.domain && (
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ACCENT_COLORS[i % ACCENT_COLORS.length]}`}>
+                              {job.domain}
+                            </span>
+                          )}
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[job.jobType] || "bg-slate-100 text-slate-600"}`}>
+                            {job.jobType}
+                          </span>
+                        </div>
+                      </div>
+                      <HiArrowRight size={14} className="text-slate-300 flex-shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
@@ -294,6 +394,91 @@ const Companies = () => {
         </div>
 
       </div>
+      {/* ── Confirmation Modal ── */}
+      {pendingJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={applyStatus === "loading" ? undefined : closeModal} />
+          <div className="relative w-full max-w-sm rounded-3xl border-2 border-slate-200/80 bg-white shadow-2xl shadow-slate-300/50 overflow-hidden">
+            <div className="h-1.5 w-full bg-[linear-gradient(135deg,#03001e,#7303c0,#ec38bc,#fdeff9)]" />
+            <div className="p-6">
+              {applyStatus !== "loading" && (
+                <button onClick={closeModal} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                  <HiX size={18} />
+                </button>
+              )}
+              <div className="flex items-center gap-3 mb-5">
+                <CompanyLogo
+                  logo={pendingJob.companyLogo}
+                  name={pendingJob.companyName}
+                  className="h-11 w-11 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                  fallbackClassName="h-11 w-11 rounded-xl flex-shrink-0 flex items-center justify-center text-sm font-bold bg-[#eef2ff] text-[#4f46e5]"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{pendingJob.jobTitle}</p>
+                  <p className="text-xs text-slate-500 truncate">{pendingJob.companyName}</p>
+                </div>
+              </div>
+
+              {!applyStatus && (
+                <>
+                  <p className="text-sm font-medium text-slate-800 mb-1">Did you complete your application?</p>
+                  <p className="text-xs text-slate-400 mb-5 leading-relaxed">We opened the job page in a new tab. Let us know if you submitted so we can track it for you.</p>
+                  <div className="flex gap-3">
+                    <button onClick={handleConfirmApply} className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#4f46e5] py-2.5 text-sm font-medium text-white hover:bg-[#4338ca] transition-colors shadow-sm">
+                      <HiCheck size={15} /> Yes, I Applied
+                    </button>
+                    <button onClick={closeModal} className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-medium text-slate-600 hover:bg-white transition-colors">
+                      Not Yet
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {applyStatus === "loading" && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                  <div className="flex gap-1.5">
+                    {[0,1,2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-[#4f46e5] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+                  </div>
+                  <p className="text-xs text-slate-400">Saving your application...</p>
+                </div>
+              )}
+
+              {applyStatus === "success" && (
+                <div className="flex flex-col items-center py-4 gap-3 text-center">
+                  <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                    <HiCheck size={24} className="text-emerald-500" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Application Tracked!</p>
+                  <p className="text-xs text-slate-400">Added to your applications. Good luck! 🎉</p>
+                  <button onClick={closeModal} className="mt-1 rounded-2xl bg-[#4f46e5] px-6 py-2 text-xs font-medium text-white hover:bg-[#4338ca] transition-colors">Done</button>
+                </div>
+              )}
+
+              {applyStatus === "duplicate" && (
+                <div className="flex flex-col items-center py-4 gap-3 text-center">
+                  <div className="h-12 w-12 rounded-2xl bg-[#eef2ff] flex items-center justify-center">
+                    <HiCheck size={24} className="text-[#4f46e5]" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Already Tracked</p>
+                  <p className="text-xs text-slate-400">You've already applied to this job.</p>
+                  <button onClick={closeModal} className="mt-1 rounded-2xl bg-slate-100 px-6 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors">Got it</button>
+                </div>
+              )}
+
+              {applyStatus === "error" && (
+                <div className="flex flex-col items-center py-4 gap-3 text-center">
+                  <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center">
+                    <HiX size={24} className="text-red-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Couldn't Save</p>
+                  <p className="text-xs text-slate-400">Something went wrong. Please try again.</p>
+                  <button onClick={closeModal} className="mt-1 rounded-2xl bg-slate-100 px-6 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

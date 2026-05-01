@@ -41,7 +41,26 @@ Start by greeting the candidate and asking your first question. Keep responses u
   }
 };
 
-// POST /api/interview/summary
+// POST /api/interview/questions
+// Body: { jobInfo }
+export const generateQuestions = async (req, res) => {
+  const { jobInfo } = req.body;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `Generate 10 interview practice questions for the role of "${jobInfo?.job_title}" at "${jobInfo?.company_name}".
+${jobInfo?.job_description ? `Job description: ${jobInfo.job_description}` : ""}
+Return ONLY a JSON array of strings, no explanation, no markdown. Example: ["Question 1?", "Question 2?"]`;
+    const result = await model.generateContent(prompt);
+    let text = result.response.text().trim();
+    // Strip markdown code fences if present
+    text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+    const questions = JSON.parse(text);
+    res.json({ questions });
+  } catch (err) {
+    console.error("Questions generation error:", err);
+    res.status(500).json({ error: "Failed to generate questions" });
+  }
+};
 // Body: { jobInfo, transcript }
 export const generateSummary = async (req, res) => {
   const { jobInfo, transcript } = req.body;

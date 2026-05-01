@@ -72,7 +72,12 @@ const VoiceInterface = ({ selectedJob, onCallEnd }) => {
         });
       } catch (err) {
         console.error("AI error:", err);
-        setStatusText("Error reaching AI. Try again.");
+        const is429 = err.response?.status === 429;
+        setStatusText(is429 ? "AI quota exceeded. Please try again later." : "Error reaching AI. Try again.");
+        if (is429) {
+          callActiveRef.current = false;
+          setCallActive(false);
+        }
       }
     },
     [selectedJob, speak]
