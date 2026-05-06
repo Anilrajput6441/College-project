@@ -3,6 +3,7 @@ import { CiLocationOn, CiCalendarDate, CiSearch } from "react-icons/ci";
 import { BsBriefcase, BsPeople } from "react-icons/bs";
 import { HiArrowRight, HiCheck, HiX } from "react-icons/hi";
 import api from "../lib/api";
+import CoverLetterModal from "./CoverLetterModal";
 import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
 
 // Local fallback jobs — shown when API/Supabase is unavailable
@@ -85,8 +86,9 @@ const FindJobs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading]         = useState(true);
   // Confirmation modal state
-  const [pendingJob, setPendingJob]   = useState(null); // job waiting for confirmation
-  const [applyStatus, setApplyStatus] = useState(null); // 'loading' | 'success' | 'duplicate' | 'error'
+  const [pendingJob, setPendingJob]   = useState(null);
+  const [applyStatus, setApplyStatus] = useState(null);
+  const [coverLetterJob, setCoverLetterJob] = useState(null);
 
   // Opens the external URL then shows the confirmation modal
   const handleApplyClick = (job) => {
@@ -303,6 +305,14 @@ const FindJobs = () => {
                   </div>
                 )}
 
+                {/* Cover Letter */}
+                <button
+                  onClick={() => setCoverLetterJob(selectedJob)}
+                  className="flex items-center justify-center gap-2 w-full rounded-2xl border border-[#4f46e5] py-3 text-sm font-medium text-[#4f46e5] hover:bg-[#eef2ff] transition-colors"
+                >
+                  ✉ Generate Cover Letter
+                </button>
+
                 {/* Apply */}
                 <button
                   onClick={() => handleApplyClick(selectedJob)}
@@ -428,6 +438,10 @@ const FindJobs = () => {
             </div>
           </div>
         </div>
+      )}
+      {/* ── Cover Letter Modal ── */}
+      {coverLetterJob && (
+        <CoverLetterModal job={coverLetterJob} onClose={() => setCoverLetterJob(null)} />
       )}
     </div>
   );

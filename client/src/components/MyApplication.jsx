@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { CiCalendarDate, CiLocationOn } from "react-icons/ci";
 import { BsBriefcase } from "react-icons/bs";
 import api from "../lib/api";
@@ -190,9 +191,9 @@ const MyApplication = () => {
               <div className="flex flex-col items-center justify-center h-40 gap-2 text-center">
                 <p className="text-sm text-slate-500">{error}</p>
                 {error.includes("log in") && (
-                  <a href="/login" className="rounded-full bg-[#4f46e5] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#4338ca] transition-colors">
+                  <Link to="/login" className="rounded-full bg-[#4f46e5] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#4338ca] transition-colors">
                     Sign In
-                  </a>
+                  </Link>
                 )}
               </div>
             ) : jobs.length === 0 ? (

@@ -4,6 +4,7 @@ import { BsBriefcase, BsBuilding } from "react-icons/bs";
 import { HiArrowRight, HiCheck, HiX } from "react-icons/hi";
 import api from "../lib/api";
 import { getInitials, resolveLogoUrl, toDisplayLogoUrl } from "../lib/jobLogos";
+import CoverLetterModal from "./CoverLetterModal";
 
 // Client-side fallback — used only when server is unreachable
 const DEMO_JOBS = [
@@ -104,6 +105,7 @@ const Companies = () => {
   const [selectedJob, setSelectedJob]     = useState(null);
   const [pendingJob, setPendingJob]       = useState(null);
   const [applyStatus, setApplyStatus]     = useState(null);
+  const [coverLetterJob, setCoverLetterJob] = useState(null);
 
   const handleApplyClick = (job) => {
     window.open(job.url, "_blank", "noopener,noreferrer");
@@ -336,6 +338,14 @@ const Companies = () => {
                     </div>
                   )}
 
+                  {/* Cover Letter + Apply buttons */}
+                  <button
+                    onClick={() => setCoverLetterJob(selectedJob)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#4f46e5] px-4 py-2 text-xs font-medium text-[#4f46e5] hover:bg-[#eef2ff] transition-colors mb-2"
+                  >
+                    ✉ Generate Cover Letter
+                  </button>
+                  <br />
                   {/* Apply button */}
                   <button
                     onClick={() => handleApplyClick(selectedJob)}
@@ -478,6 +488,10 @@ const Companies = () => {
             </div>
           </div>
         </div>
+      )}
+      {/* ── Cover Letter Modal ── */}
+      {coverLetterJob && (
+        <CoverLetterModal job={coverLetterJob} onClose={() => setCoverLetterJob(null)} />
       )}
     </div>
   );
