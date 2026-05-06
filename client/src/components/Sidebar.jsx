@@ -90,6 +90,7 @@ const Sidebar = () => {
                   <NavLink
                     key={item.name}
                     to={item.path}
+                    target="_self"
                     className={({ isActive }) =>
                       `flex items-center px-3 py-2 rounded-lg transition-colors ${
                         isActive
